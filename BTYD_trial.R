@@ -1,8 +1,11 @@
 library(BTYD)
 library(dplyr)
 library(foreach)
+library(ggplot2)
+devtools::source_gist("2a1bb0133ff568cbe28d", 
+                      filename = "geom_flat_violin.R")
 
-#==== Parate/NBD , BG/NBD, Gamma-Gamma====
+#==== Parate/NBD , BG/NBD, Gamma-Gamma ====
 ## prep
 # load data, and tidy up
 cdnowElog <- system.file("data/cdnowElog.csv", package="BTYD")
@@ -34,7 +37,7 @@ cal.cbs <- dc.BuildCBSFromCBTAndDates(cal.cbt, cal.cbs.dates, per="week") %>%
     dplyr::mutate(m.x=ave.spend)
 cal.cbs %>% head
 
-## pram est
+## param est
 # palate / nbd
 (pnbd.params <- pnbd.EstimateParameters(cal.cbs))
 (bgnbd.params <- bgnbd.EstimateParameters(cal.cbs))
@@ -72,17 +75,47 @@ ltv.result <- foreach(i=1:5, .combine="rbind") %do% {
         cal.cbs,
         trans.num=pnbd.expected.trans.num,
         prob.alive=pnbd.prob.alive,
+        trans.val=expected.trans.val,
         forecast.ltv=pnbd.forecast.ltv
     )
     bgnbd.res <- bind_cols(
-        data.frame(cust=dimnames(tot.cbt)$cust, year=i, model="pnbd"),
+        data.frame(cust=dimnames(tot.cbt)$cust, year=i, model="bgnbd"),
         cal.cbs,
         trans.num=bgnbd.expected.trans.num,
         prob.alive=bgnbd.prob.alive,
+        trans.val=expected.trans.val,
         forecast.ltv=bgnbd.forecast.ltv
     )
     res <- bind_rows(pnbd.res, bgnbd.res)
     return(res)
 }
 
+## viz res
+# tile
+# x.axis = x, y.axis = t.x, fill = trans.num or prob.alive
+ggplot(data=ltv.result, aes(x=x, y=t.x, fill=trans.num)) +
+    geom_tile() +
+    scale_fill_gradientn(colours = c("blue", "red")) + 
+    ggtitle("frequency;x, recency;t.x, and expected transactions in 1 year")
+ggplot(data=ltv.result, aes(x=x, y=t.x, fill=prob.alive)) +
+    geom_tile() +
+    scale_fill_gradientn(colours = c("blue", "red")) + 
+    ggtitle("frequency;x, recency;t.x, and prob to alive in 1 year")
 
+# tile
+# x.axis = m.x, y.axis = m.x, fill = expected.trans.val
+ggplot(data=ltv.result, aes(x=x, y=round(m.x), fill=trans.val)) +
+    geom_tile() +
+    scale_fill_gradientn(colours = c("blue", "red")) + 
+    ggtitle("frequency;x, monetary;m.x, and expected transactions in 1 year")
+
+ggplot(data=ltv.result, aes(x=round(log(x),1), y=round(log(m.x),1), fill=trans.val)) +
+    geom_tile() +
+    scale_fill_gradientn(colours = c("blue", "red")) + 
+    ggtitle("frequency;log(x), monetary;log(m.x), and expected transactions in 1 year")
+
+# violin
+# x.axis = year, y.axis = trans.num or prob.alive
+
+# tile
+# x.axis = x, y.axis = t.x, fill = pnbd's  - bgnbd's
