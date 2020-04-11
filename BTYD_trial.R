@@ -55,7 +55,7 @@ one.year <- 52
 # expected num of trans by all cust
 # pnbd.Expectation(pnbd.params, t=one.year) 
 # bgnbd.Expectation(bgnbd.params, t=one.year)
-ltv.result <- foreach(i=1:5, .combine="rbind") %do% {
+ltv.result <- foreach(i=1:15, .combine="rbind") %do% {
     # the number of transactions we expect a customer to make in the holdout period
     pnbd.expected.trans.num <- pnbd.ConditionalExpectedTransactions(pnbd.params, T.star=one.year*i, cal.cbs$x, cal.cbs$t.x, cal.cbs$T.cal)
     bgnbd.expected.trans.num <- bgnbd.ConditionalExpectedTransactions(bgnbd.params, T.star=one.year*i, cal.cbs$x, cal.cbs$t.x, cal.cbs$T.cal)
@@ -77,7 +77,8 @@ ltv.result <- foreach(i=1:5, .combine="rbind") %do% {
         prob.alive=pnbd.prob.alive,
         trans.val=expected.trans.val,
         forecast.ltv=pnbd.forecast.ltv
-    )
+    ) %>% 
+      dplyr::mutate_if(is.factor, as.character)
     bgnbd.res <- bind_cols(
         data.frame(cust=dimnames(tot.cbt)$cust, year=i, model="bgnbd"),
         cal.cbs,
@@ -85,7 +86,8 @@ ltv.result <- foreach(i=1:5, .combine="rbind") %do% {
         prob.alive=bgnbd.prob.alive,
         trans.val=expected.trans.val,
         forecast.ltv=bgnbd.forecast.ltv
-    )
+    ) %>% 
+      dplyr::mutate_if(is.factor, as.character)
     res <- bind_rows(pnbd.res, bgnbd.res)
     return(res)
 }
@@ -102,6 +104,26 @@ ggplot(data=ltv.result, aes(x=x, y=t.x, fill=prob.alive)) +
     scale_fill_gradientn(colours = c("blue", "red")) + 
     ggtitle("frequency;x, recency;t.x, and prob to alive in 1 year")
 
+# line
+# x.axis = year, y.axis = trans.num or prob.alive
+set.seed(1234)
+rondom5.cust <- round(runif(5, min(as.numeric(ltv.result$cust)), max(as.numeric(ltv.result$cust))))
+
+ltv.result %>% 
+  dplyr::filter(model=="bgnbd") %>% 
+  dplyr::filter(cust %in% top5.cust) %>% 
+  ggplot(data=., aes(x=year, y=trans.num, colour=cust)) +
+  geom_line()
+ltv.result %>% 
+  dplyr::filter(model=="bgnbd") %>% 
+  dplyr::filter(cust %in% top5.cust) %>%
+  ggplot(data=., aes(x=year, y=prob.alive, colour=cust)) +
+  geom_line()
+
+# tile
+# x.axis = x, y.axis = t.x, fill = pnbd's  - bgnbd's
+ltv.result %>% glimpse()
+
 # tile
 # x.axis = m.x, y.axis = m.x, fill = expected.trans.val
 ggplot(data=ltv.result, aes(x=x, y=round(m.x), fill=trans.val)) +
@@ -114,8 +136,11 @@ ggplot(data=ltv.result, aes(x=round(log(x),1), y=round(log(m.x),1), fill=trans.v
     scale_fill_gradientn(colours = c("blue", "red")) + 
     ggtitle("frequency;log(x), monetary;log(m.x), and expected transactions in 1 year")
 
-# violin
-# x.axis = year, y.axis = trans.num or prob.alive
 
-# tile
-# x.axis = x, y.axis = t.x, fill = pnbd's  - bgnbd's
+
+
+
+
+
+
+
