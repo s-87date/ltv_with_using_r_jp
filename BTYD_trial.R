@@ -2,8 +2,6 @@ library(BTYD)
 library(dplyr)
 library(foreach)
 library(ggplot2)
-devtools::source_gist("2a1bb0133ff568cbe28d", 
-                      filename = "geom_flat_violin.R")
 
 #==== Parate/NBD , BG/NBD, Gamma-Gamma ====
 ## prep
