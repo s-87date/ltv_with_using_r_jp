@@ -6,8 +6,10 @@ library(ggplot2)
 #==== Parate/NBD , BG/NBD, Gamma-Gamma ====
 ## prep
 # load data, and tidy up
-cdnowElog <- system.file("data/cdnowElog.csv", package="BTYD")
-elog <- dc.ReadLines(cdnowElog, cust.idx = 2, date.idx = 3, sales.idx = 5); glimpse(elog)
+# Create event log from file "cdnowElog.csv", which has
+# customer IDs in the second column, dates in the third column, and
+# sales numbers in the fifth column.
+elog <- dc.ReadLines(system.file("data/cdnowElog.csv", package="BTYD"),2,3,5); glimpse(elog)
 elog$date <- as.Date(elog$date, "%Y%m%d")
 # only one tran per cust per day w/ the total sum of their spending for the day
 elog <- dc.MergeTransactionsOnSameDate(elog)
